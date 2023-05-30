@@ -1,3 +1,5 @@
+package org.hse.App;
+
 import org.apache.pdfbox.text.TextPosition;
 
 import java.util.List;

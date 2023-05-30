@@ -46,6 +46,9 @@ public class CSVParser implements Parser {
           diplomas.add(diploma);
         }
       }
+      for (Diploma diploma : diplomas) {
+        System.out.println(diploma.toString());
+      }
     } catch (IOException e) {
       e.printStackTrace();
     }

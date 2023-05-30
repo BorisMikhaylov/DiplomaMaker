@@ -1,3 +1,5 @@
+package org.hse.App;
+
 import javax.swing.JDialog;
 
 /*
