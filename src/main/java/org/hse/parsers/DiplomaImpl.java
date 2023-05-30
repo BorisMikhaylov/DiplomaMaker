@@ -1,6 +1,6 @@
 package org.hse.parsers;
 
-class DiplomaImpl implements Diploma {
+public class DiplomaImpl implements Diploma {
   private int ID;
   private String firstName;
   private String lastName;

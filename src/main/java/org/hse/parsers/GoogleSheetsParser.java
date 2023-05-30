@@ -1,3 +1,5 @@
+package org.hse.parsers;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -56,7 +58,7 @@ public class GoogleSheetsParser {
   private static Sheets createSheetsService() throws IOException, GeneralSecurityException {
     HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
     Credential credential = GoogleCredential.fromStream(
-            new FileInputStream("/home/maksimk/IdeaProjects/project/src/compact.json"))
+            new FileInputStream("/home/maksimk/IdeaProjects/project_final/DiplomaMaker/src/main/java/org/hse/parsers/compact.json"))
         .createScoped(SheetsScopes.all());
 
     return new Sheets.Builder(httpTransport, JSON_FACTORY, credential)

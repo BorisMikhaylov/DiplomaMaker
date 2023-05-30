@@ -1,6 +1,6 @@
 package org.hse.parsers;
 
-interface Diploma {
+public interface Diploma {
   String getFirstName();
   void setFirstName(String firstName);
   String getLastName();
