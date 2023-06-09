@@ -3,6 +3,7 @@ import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDType0Font;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.TextPosition;
@@ -15,35 +16,28 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.lang.String;
 
 import static java.lang.Math.max;
 
 public class Main extends JFrame implements ActionListener {
-    private JButton tableButton;
-    private JButton sampleButton;
-    private JButton edButton;
-    private JButton diplomaButton;
-    private JButton quick_diplomaButton;
+    private final JButton tableButton;
+    private final JButton sampleButton;
+    private final JButton diplomaButton;
+    private final JButton quick_diplomaButton;
     private JButton editTableButton;
     private JButton editSampleButton;
-    private JPanel tablePanel;
-    private JPanel samplePanel;
-    private JPanel edPanel;
-    private JPanel diplomaPanel;
-    private JPanel quick_diplomaPanel;
+    private final JPanel tablePanel;
+    private final JPanel samplePanel;
     private boolean editTableInd = false;
     private boolean editSampleInd = false;
     private boolean tableInd = true;
     private boolean sampleInd = true;
-    private String[] lastname = new String[] {"Ivanov", "Petrov", "Nikolaev", "Sviridov"};
-    private String[] name = new String[]{"Ivan", "Matvey", "Stepan", "Yuri"};
-    private JFileChooser table;
-    private JFileChooser sample;
-    private File csv_file;
+    private final String[] lastname = new String[] {"Ivanov", "Petrov", "Nikolaev", "Sviridov"};
+    private final String[] name = new String[]{"Ivan", "Matvey", "Stepan", "Yuri"};
     private File pdf_file;
+    private static List<Diploma> persons;
 
     public Main() {
         super("DiplomaMaker");
@@ -61,7 +55,7 @@ public class Main extends JFrame implements ActionListener {
         sampleButton.addActionListener(this);
 
         // создаем кнопку "Редактирование"
-        edButton = new JButton("Редактирование");
+        JButton edButton = new JButton("Редактирование");
 
         // устанавливаем слушатель событий для кнопки "Редактирование"
         edButton.addActionListener(this);
@@ -83,11 +77,11 @@ public class Main extends JFrame implements ActionListener {
         tablePanel.add(tableButton);
         samplePanel = new JPanel();
         samplePanel.add(sampleButton);
-        edPanel = new JPanel();
+        JPanel edPanel = new JPanel();
         edPanel.add(edButton);
-        diplomaPanel = new JPanel();
+        JPanel diplomaPanel = new JPanel();
         diplomaPanel.add(diplomaButton);
-        quick_diplomaPanel = new JPanel();
+        JPanel quick_diplomaPanel = new JPanel();
         quick_diplomaPanel.add(quick_diplomaButton);
 
         // Создание макета
@@ -110,29 +104,36 @@ public class Main extends JFrame implements ActionListener {
 
     void table_load() {
         // загружаем таблицу
-        table = new JFileChooser();
-        FileNameExtensionFilter filter = new FileNameExtensionFilter("CSV Files", "csv");
+        JFileChooser table = new JFileChooser();
+        FileNameExtensionFilter filter = new FileNameExtensionFilter("XLSX, CSV Files", "xlsx", "csv");
         table.setFileFilter(filter);
         table.showOpenDialog(null);
-        csv_file = table.getSelectedFile();
-        if (csv_file != null) {
-            if (csv_file != null && csv_file.isFile() && csv_file.getName().endsWith(".csv")) {
+        File table_file = table.getSelectedFile();
+        if (table_file != null) {
+            if (table_file != null && table_file.isFile() && (table_file.getName().endsWith(".xlsx") || table_file.getName().endsWith(".csv"))) {
                 editTableInd = true;
                 tableInd = false;
-                tableButton.setText(csv_file.getName());
-                // выполняем действия с загруженным файлом
+                tableButton.setText(table_file.getName());
+                if (table_file.getName().endsWith(".xlsx")) {
+                    ExcelParser parser = new ExcelParser(table_file);
+                    persons = parser.parse();
+                }
+                else {
+                    CSVParser parser = new CSVParser(table_file);
+                    persons = parser.parse();
+                }
             } else {
-                JOptionPane.showMessageDialog(null, "Выберите файл с расширением .csv", "Ошибка", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(null, "Выберите файл с расширением .xlsx или .csv", "Ошибка", JOptionPane.ERROR_MESSAGE);
             }
         }
         else {
-            JOptionPane.showMessageDialog(null, "Выберите файл с расширением .csv", "Ошибка", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, "Выберите файл с расширением .xlsx или .csv", "Ошибка", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     void sample_load() {
         // загружаем шаблон
-        sample = new JFileChooser();
+        JFileChooser sample = new JFileChooser();
         FileNameExtensionFilter filter = new FileNameExtensionFilter("PDF Files", "pdf");
         sample.setFileFilter(filter);
         sample.showOpenDialog(null);
@@ -141,7 +142,7 @@ public class Main extends JFrame implements ActionListener {
             editSampleInd = true;
             sampleInd = false;
             sampleButton.setText(pdf_file.getName());
-            // выполняем действия с загруженным файлом
+            // выполнить действия с загруженным файлом
         } else {
             JOptionPane.showMessageDialog(null, "Выберите файл с расширением .pdf", "Ошибка", JOptionPane.ERROR_MESSAGE);
         }
@@ -215,21 +216,20 @@ public class Main extends JFrame implements ActionListener {
             contentStream.fill(); // закрашивание прямоугольника
 
             contentStream.beginText();
+
             String text = surname + " " + name;
-            PDFont font = PDType1Font.HELVETICA_BOLD;
+            PDFont font = PDType0Font.load(document, new File("src/arial.TTF"));
             float fontSize = 12;
             float leading = 1.5f * fontSize;
-            // Вычисление ширины текста
+
             float stringWidth = font.getStringWidth(text) * fontSize / 1000f;
-            // Вычисление координаты x для центрирования текста
             float startX = fx + ((iwidth + ix - fx) - stringWidth) / 2;
-            // Вычисление координаты y для центрирования текста
             float startY = fy;
 
             contentStream.setFont(font, fontSize);
             contentStream.setNonStrokingColor(0, 0, 0); // черный цвет текста
-            contentStream.newLineAtOffset(startX, startY); // перенос курсора на середину прямоугольника
-            contentStream.showText(text); // вставка слова
+            contentStream.newLineAtOffset(startX, startY);
+            contentStream.showText(text);
             contentStream.endText();
 
             contentStream.close(); // закрытие content stream
@@ -303,8 +303,12 @@ public class Main extends JFrame implements ActionListener {
             }
         }
         if (e.getSource() == quick_diplomaButton) {
-            for (int i = 0; i < name.length; i++) {
-                String str = lastname[i] + " " + name[i] + ".pdf";
+            for (int i = 0; i < persons.size(); i++) {
+                Diploma person = persons.get(i);
+                String lastname = person.getLastName();
+                String name = person.getFirstName();
+
+                String str = lastname + " " + name + ".pdf";
                 try {
                     PDDocument sourceDoc = PDDocument.load(pdf_file);
                     // Создаем новый документ
@@ -315,7 +319,7 @@ public class Main extends JFrame implements ActionListener {
                         newDoc.addPage(sourceDoc.getPage(j));
                     }
 
-                    replacefio(newDoc, lastname[i], name[i]);
+                    replacefio(newDoc, lastname, name);
 
                     // Сохраняем новый документ
                     newDoc.save(str);
