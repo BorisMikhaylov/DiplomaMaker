@@ -50,9 +50,9 @@ public class ExcelParser implements Parser {
       }
 
       // Вывод данных
-      for (Diploma diploma : diplomas) {
-        System.out.println(diploma.toString());
-      }
+//      for (Diploma diploma : diplomas) {
+//        System.out.println(diploma.toString());
+//      }
     } catch (IOException e) {
       e.printStackTrace();
     }
