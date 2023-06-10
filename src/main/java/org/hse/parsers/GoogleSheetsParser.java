@@ -16,20 +16,19 @@ import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
-public class GoogleSheetsParser {
+public class GoogleSheetsParser implements Parser{
   private static final String APPLICATION_NAME = "Google Sheets Parser";
   private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
   private static final String TOKENS_DIRECTORY_PATH = "tokens";
 
-  public static void main(String[] args) {
+  public List<Diploma> parse() {
     String spreadsheetId = "1qh6PrL92l6pIYWWKfqszniqozmSDHYV5GGTK1ojaZhg";
     String range = "Лист1!A1:G"; // Укажите нужный диапазон ячеек
+    ArrayList<Diploma> diplomas = new ArrayList<>();
 
     try {
       Sheets service = createSheetsService();
       List<List<Object>> values = getDataFromSpreadsheet(service, spreadsheetId, range);
-
-      ArrayList<Diploma> diplomas = new ArrayList<>();
 
       for (List<Object> row : values) {
         Diploma diploma = new DiplomaImpl();
@@ -53,6 +52,7 @@ public class GoogleSheetsParser {
     } catch (IOException | GeneralSecurityException e) {
       e.printStackTrace();
     }
+    return diplomas;
   }
 
   private static Sheets createSheetsService() throws IOException, GeneralSecurityException {
