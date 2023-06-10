@@ -39,7 +39,6 @@ public class Main extends JFrame implements ActionListener {
   private final CustomButton sampleButton;
   private final CustomButton diplomaButton;
   private final CustomButton quick_diplomaButton;
-  private CustomButton editTableButton;
   private CustomButton editSampleButton;
   private CustomButton nameButton;
   private final JPanel tablePanel;
@@ -50,11 +49,7 @@ public class Main extends JFrame implements ActionListener {
   private boolean editTableInd = false;
   private boolean editSampleInd = false;
   File table_file;
-  private boolean excelInd = false;
-  private boolean googleSheetIndex = false;
   private boolean sampleInd = true;
-  private final String[] lastname = new String[]{"Ivanov", "Petrov", "Nikolaev", "Sviridov"};
-  private final String[] name = new String[]{"Ivan", "Matvey", "Stepan", "Yuri"};
   private File pdf_file;
   private static List<Diploma> persons;
   private String link;
@@ -77,7 +72,7 @@ public class Main extends JFrame implements ActionListener {
     sampleButton.addActionListener(this);
 
     // создаем кнопку "Редактирование"
-    edButton = new CustomButton("Редактирование", button_link);
+    edButton = new CustomButton("Редактор", button_link);
 
     // устанавливаем слушатель событий для кнопки "Редактирование"
     edButton.addActionListener(this);
@@ -196,6 +191,8 @@ public class Main extends JFrame implements ActionListener {
     }
     PDDocument document = PDDocument.load(pdf_file);
 
+    List<TextObject> new_textObjects = new ArrayList<>();
+
     // получение изображения из первой страницы pdf
     PDFRenderer pdfRenderer = new PDFRenderer(document);
     BufferedImage image = pdfRenderer.renderImage(0);
@@ -204,7 +201,7 @@ public class Main extends JFrame implements ActionListener {
     JFrame frame = new JFrame();
     frame.getContentPane().setLayout(new BorderLayout());
 
-    ImagePanel imagePanel = new ImagePanel(image);
+    ImagePanel imagePanel = new ImagePanel(image, new_textObjects);
     frame.getContentPane().add(imagePanel, BorderLayout.CENTER);
 
     frame.setSize(image.getWidth(), image.getHeight());
@@ -228,7 +225,7 @@ public class Main extends JFrame implements ActionListener {
               JOptionPane.showMessageDialog(frame, "Некорректный размер шрифта. Используется значение по умолчанию: " + fontSize);
             }
           }
-          textObjects.add(new TextObject(text, e.getX(), e.getY(), inputFontSize));
+          new_textObjects.add(new TextObject(text, e.getX(), e.getY(), inputFontSize));
           imagePanel.repaint();
         }
       }
@@ -238,6 +235,8 @@ public class Main extends JFrame implements ActionListener {
     JButton saveButton = new JButton("Сохранить");
     saveButton.addActionListener(u -> {
       Graphics2D g2d = image.createGraphics();
+
+      textObjects.addAll(new_textObjects);
 
       for (TextObject textObject : textObjects) {
         g2d.setFont(new Font("Arial", Font.PLAIN, textObject.getFontSize()));
@@ -251,7 +250,7 @@ public class Main extends JFrame implements ActionListener {
         ImageIO.write(image, "png", outputFile);
 
         PNGtoPDFConverter tp = new PNGtoPDFConverter();
-        PDDocument doc = tp.to_pdf("result.png", "result.pdf");
+        PDDocument doc = tp.to_pdf("result.png", "result.pdf", null);
         outputFile.delete();
         JOptionPane.showMessageDialog(frame, "Изображение успешно сохранено в файл result.pdf");
       } catch (IOException ex) {
@@ -260,6 +259,15 @@ public class Main extends JFrame implements ActionListener {
       }
     });
     frame.getContentPane().add(saveButton, BorderLayout.SOUTH);
+  }
+
+  private int countWidth(String text, FontMetrics fontMetrics) {
+    int width = 0;
+    for (int i = 0; i < text.length(); i++) {
+      int charWidth = fontMetrics.charWidth(text.charAt(i));
+      width += charWidth;
+    }
+    return width;
   }
 
   private static File chooseSaveFolder() {
@@ -353,8 +361,6 @@ public class Main extends JFrame implements ActionListener {
   public void actionPerformed(ActionEvent e) {
     if (e.getSource() == tableButton) {
       getContentPane().remove(startPanel);
-      googleSheetIndex = false;
-      excelInd = false;
       link = null;
       table_file = null;
 
@@ -398,7 +404,6 @@ public class Main extends JFrame implements ActionListener {
             JOptionPane.showMessageDialog(null, "Простите, но таблица неверная", "Ошибка",
                     JOptionPane.ERROR_MESSAGE);
           } else {
-            googleSheetIndex = true;
             goBack();
           }
         }
@@ -412,7 +417,6 @@ public class Main extends JFrame implements ActionListener {
             JOptionPane.showMessageDialog(null, "Простите, но таблица неверная", "Ошибка",
                     JOptionPane.ERROR_MESSAGE);
           } else {
-            excelInd = true;
             goBack();
           }
         }
@@ -433,14 +437,13 @@ public class Main extends JFrame implements ActionListener {
 
       // создаем и добавляем кнопку "Редактирование"
       if (editSampleInd) {
-        editSampleButton = new CustomButton("Редактирование", button_link);
+        editSampleButton = new CustomButton("Редактирование шаблона", button_link);
         samplePanel.add(editSampleButton);
       }
 
       // устанавливаем слушатель событий для кнопки "Редактирование"
       editSampleButton.addActionListener(new ActionListener() {
         public void actionPerformed(ActionEvent e) {
-          // действия при нажатии на кнопку "Редактирование"
           sample_load();
         }
       });
@@ -453,22 +456,47 @@ public class Main extends JFrame implements ActionListener {
         String lastname = person.getLastName();
         String name = person.getFirstName();
         String str = lastname + " " + name + ".pdf";
+        String fi = lastname + " " + name;
         try {
-          PDDocument sourceDoc = PDDocument.load(pdf_file);
           // Создаем новый документ
-          PDDocument newDoc = new PDDocument();
+          if (pdf_file == null) {
+            JOptionPane.showMessageDialog(null, "Выберите файл с расширением .pdf", "Ошибка",
+                    JOptionPane.ERROR_MESSAGE);
+          }
+          PDDocument document = PDDocument.load(pdf_file);
 
-          // Копируем каждую страницу из исходного документа в новый документ
-          for (int j = 0; j < sourceDoc.getNumberOfPages(); j++) {
-            newDoc.addPage(sourceDoc.getPage(j));
+          // получение изображения из первой страницы pdf
+          PDFRenderer pdfRenderer = new PDFRenderer(document);
+          BufferedImage image = pdfRenderer.renderImage(0);
+
+          Graphics2D g2d = image.createGraphics();
+
+          for (TextObject textObject : textObjects) {
+            String ex_text = "Фамилия Имя";
+            Font font = new Font("Arial", Font.PLAIN, textObject.getFontSize());
+            g2d.setFont(font);
+            g2d.setColor(Color.BLACK);
+            if (textObject.getText().equals(ex_text)) {
+              FontMetrics fontMetrics = g2d.getFontMetrics(font);
+              int old_width = countWidth(ex_text, fontMetrics);
+              int new_width = countWidth(fi, fontMetrics);
+              g2d.drawString(fi, textObject.getX() + (old_width - new_width) / 2 , textObject.getY());
+            }
+            else {
+              g2d.drawString(textObject.getText(), textObject.getX(), textObject.getY());
+            }
           }
 
-          replacefio(newDoc, lastname, name);
+          try {
+            // сохранение измененного изображения
+            File outputFile = new File("result.png");
+            ImageIO.write(image, "png", outputFile);
 
-          // Сохраняем новый документ
-          if (saveFolder != null) {
-            // Сохранение PDDocument в выбранную папку
-            newDoc.save(new File(saveFolder, str));
+            PNGtoPDFConverter tp = new PNGtoPDFConverter();
+            PDDocument doc = tp.to_pdf("result.png", str, saveFolder);
+            outputFile.delete();
+          } catch (IOException ex) {
+            ex.printStackTrace();
           }
         } catch (IOException ex) {
           throw new RuntimeException(ex);
@@ -539,9 +567,11 @@ public class Main extends JFrame implements ActionListener {
 
   private static class ImagePanel extends JPanel {
     private final BufferedImage image;
+    private final List <TextObject> new_textObjects;
 
-    public ImagePanel(BufferedImage image) {
+    public ImagePanel(BufferedImage image, List <TextObject> new_textObjects) {
       this.image = image;
+      this.new_textObjects = new_textObjects;
     }
 
     @Override
@@ -552,6 +582,11 @@ public class Main extends JFrame implements ActionListener {
       Graphics2D g2d = (Graphics2D) g;
 
       for (TextObject textObject : textObjects) {
+        g2d.setFont(new Font("Arial", Font.PLAIN, textObject.getFontSize()));
+        g2d.setColor(Color.BLACK);
+        g2d.drawString(textObject.getText(), textObject.getX(), textObject.getY());
+      }
+      for (TextObject textObject : new_textObjects) {
         g2d.setFont(new Font("Arial", Font.PLAIN, textObject.getFontSize()));
         g2d.setColor(Color.BLACK);
         g2d.drawString(textObject.getText(), textObject.getX(), textObject.getY());
@@ -586,12 +621,13 @@ public class Main extends JFrame implements ActionListener {
     public int getFontSize() {
       return fontSize;
     }
+
   }
 
   private static class PNGtoPDFConverter {
     private final PDDocument document = new PDDocument();
 
-    public PDDocument to_pdf(String pngFilePath, String pdfFilePath) {
+    public PDDocument to_pdf(String pngFilePath, String pdfFilePath, File saveFolder) {
       try {
         // Загрузка изображения из файла PNG
         BufferedImage image = ImageIO.read(new File(pngFilePath));
@@ -612,7 +648,12 @@ public class Main extends JFrame implements ActionListener {
 
         // Закрытие контента и сохранение документа
         contentStream.close();
-        document.save(pdfFilePath);
+        if (saveFolder != null) {
+          document.save(new File(saveFolder, pdfFilePath));
+        }
+        else {
+          document.save(pdfFilePath);
+        }
         document.close();
       } catch (IOException e) {
         System.out.println("Ошибка при преобразовании PNG в PDF: " + e.getMessage());
