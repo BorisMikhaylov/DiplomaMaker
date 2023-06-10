@@ -1,0 +1,25 @@
+<component name="libraryTable">
+  <library name="fasterxml.transistore.client.jdk" type="repository">
+    <properties maven-id="com.fasterxml.transistore:transistore-client-jdk:0.9.9" />
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/fasterxml/transistore/transistore-client-jdk/0.9.9/transistore-client-jdk-0.9.9.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/fasterxml/transistore/transistore-client/0.9.9/transistore-client-0.9.9.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/fasterxml/transistore/transistore-basic/0.9.9/transistore-basic-0.9.9.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/fasterxml/jackson/core/jackson-core/2.3.2/jackson-core-2.3.2.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/fasterxml/jackson/core/jackson-databind/2.3.2/jackson-databind-2.3.2.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/fasterxml/clustermate/clustermate-client/0.9.26/clustermate-client-0.9.26.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/fasterxml/storemate/storemate-shared/1.0.2/storemate-shared-1.0.2.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/ning/compress-lzf/1.0.0/compress-lzf-1.0.0.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/junit/junit/4.8.2/junit-4.8.2.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/fasterxml/clustermate/clustermate-json/0.9.26/clustermate-json-0.9.26.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/slf4j/slf4j-api/1.7.5/slf4j-api-1.7.5.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/fasterxml/jackson/dataformat/jackson-dataformat-smile/2.3.2/jackson-dataformat-smile-2.3.2.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/skife/config/config-magic/0.17/config-magic-0.17.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/fasterxml/clustermate/clustermate-client-jdk/0.9.26/clustermate-client-jdk-0.9.26.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/fasterxml/clustermate/clustermate-api/0.9.26/clustermate-api-0.9.26.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/com/fasterxml/jackson/core/jackson-annotations/2.3.0/jackson-annotations-2.3.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
