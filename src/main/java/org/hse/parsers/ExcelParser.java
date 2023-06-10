@@ -54,7 +54,7 @@ public class ExcelParser implements Parser {
 //        System.out.println(diploma.toString());
 //      }
     } catch (IOException e) {
-      e.printStackTrace();
+      return null;
     }
     return diplomas;
   }

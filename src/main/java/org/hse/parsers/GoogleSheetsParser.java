@@ -1,5 +1,7 @@
 package org.hse.parsers;
 
+import com.google.api.services.sheets.v4.model.Sheet;
+import com.google.api.services.sheets.v4.model.Spreadsheet;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -16,18 +18,33 @@ import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.api.services.sheets.v4.model.ValueRange;
 
+
 public class GoogleSheetsParser implements Parser{
   private static final String APPLICATION_NAME = "Google Sheets Parser";
   private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
   private static final String TOKENS_DIRECTORY_PATH = "tokens";
+  private String link;
+
+
+  public GoogleSheetsParser(String link) {
+    this.link = link;
+  }
 
   public List<Diploma> parse() {
-    String spreadsheetId = "1qh6PrL92l6pIYWWKfqszniqozmSDHYV5GGTK1ojaZhg";
-    String range = "Лист1!A1:G"; // Укажите нужный диапазон ячеек
     ArrayList<Diploma> diplomas = new ArrayList<>();
+    String spreadsheetId;
+    try {
+      int editIndex = link.indexOf("/edit");
+      int dIndex = link.indexOf("/d/");
+      spreadsheetId = link.substring(dIndex + 3, editIndex);
+      System.out.println(spreadsheetId);
+    } catch (IndexOutOfBoundsException e) {
+      return null;
+    }
 
     try {
       Sheets service = createSheetsService();
+      String range = "Лист1!A1:G"; // Укажите нужный диапазон ячеек
       List<List<Object>> values = getDataFromSpreadsheet(service, spreadsheetId, range);
 
       for (List<Object> row : values) {
@@ -50,7 +67,7 @@ public class GoogleSheetsParser implements Parser{
         System.out.println(diploma.toString());
       }
     } catch (IOException | GeneralSecurityException e) {
-      e.printStackTrace();
+      return null;
     }
     return diplomas;
   }
@@ -73,5 +90,21 @@ public class GoogleSheetsParser implements Parser{
         .execute();
 
     return response.getValues();
+  }
+
+  private static int getSheetIndex(Sheets sheetsService, String spreadsheetId) throws IOException {
+    Spreadsheet spreadsheet = sheetsService.spreadsheets().get(spreadsheetId).execute();
+    List<Sheet> sheets = spreadsheet.getSheets();
+
+    for (int i = 0; i < sheets.size(); i++) {
+      Sheet sheet = sheets.get(i);
+      if (sheet.getProperties().getTitle().equals("Sheet1")) {
+        return i;
+      } else if (sheet.getProperties().getTitle().equals("Лист1")) {
+        return i;
+      }
+    }
+
+    throw new IllegalArgumentException("Sheet with name '" + "Sheet1" + "' not found.");
   }
 }

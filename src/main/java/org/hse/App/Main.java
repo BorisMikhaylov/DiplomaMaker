@@ -22,6 +22,7 @@ import java.lang.String;
 import org.hse.parsers.CSVParser;
 import org.hse.parsers.Diploma;
 import org.hse.parsers.ExcelParser;
+import org.hse.parsers.GoogleSheetsParser;
 
 import static java.lang.Math.max;
 
@@ -256,8 +257,6 @@ public class Main extends JFrame implements ActionListener {
       link = null;
       table_file = null;
 
-
-
       // Создаем панель страницы A
       pageAPanel = new JPanel();
       JButton button1 = new JButton("Ввести ссылку");
@@ -276,19 +275,29 @@ public class Main extends JFrame implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
           link = textField.getText(); // Сохраняем текст из поля
-          googleSheetIndex = true;
-          goBack();
+          GoogleSheetsParser parser = new GoogleSheetsParser(link);
+          persons = parser.parse();
+          if (persons == null) {
+            JOptionPane.showMessageDialog(null, "Простите, но таблица неверная", "Ошибка",
+                JOptionPane.ERROR_MESSAGE);
+          } else {
+            googleSheetIndex = true;
+            goBack();
+          }
         }
       });
 
       button2.addActionListener(new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
-          System.out.println(1);
           table_load();
-          System.out.println(2);
-          excelInd = true;
-          goBack();
+          if (persons == null) {
+            JOptionPane.showMessageDialog(null, "Простите, но таблица неверная", "Ошибка",
+                JOptionPane.ERROR_MESSAGE);
+          } else {
+            excelInd = true;
+            goBack();
+          }
         }
       });
 

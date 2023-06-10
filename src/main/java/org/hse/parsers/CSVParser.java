@@ -13,16 +13,6 @@ public class CSVParser implements Parser {
   public CSVParser(File file) {
     CSVParser.file = file;
   }
-//  public static void main(String[] args) {
-//    String filePath = "/home/maksimk/IdeaProjects/project/src/Hello.csv"; // Путь к файлу CSV
-//
-//    List<Diploma> diplomas = parseCSV(filePath);
-//
-//    // Вывод данных
-//    for (Diploma diploma : diplomas) {
-//      System.out.println(diploma.toString());
-//    }
-//  }
 
   @Override
   public List<Diploma> parse() {
@@ -50,7 +40,7 @@ public class CSVParser implements Parser {
         System.out.println(diploma.toString());
       }
     } catch (IOException e) {
-      e.printStackTrace();
+      return null;
     }
 
     return diplomas;
