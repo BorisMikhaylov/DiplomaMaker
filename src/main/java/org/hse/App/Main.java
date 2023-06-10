@@ -28,13 +28,13 @@ import static java.lang.Math.max;
 
 public class Main extends JFrame implements ActionListener {
 
-  private final JButton tableButton;
-  private final JButton sampleButton;
-  private final JButton diplomaButton;
-  private final JButton quick_diplomaButton;
-  private JButton editTableButton;
-  private JButton editSampleButton;
-  private JButton nameButton;
+  private final CustomButton tableButton;
+  private final CustomButton sampleButton;
+  private final CustomButton diplomaButton;
+  private final CustomButton quick_diplomaButton;
+  private CustomButton editTableButton;
+  private CustomButton editSampleButton;
+  private CustomButton nameButton;
   private final JPanel tablePanel;
   private final JPanel samplePanel;
   private JPanel startPanel;
@@ -50,55 +50,74 @@ public class Main extends JFrame implements ActionListener {
   private File pdf_file;
   private static List<Diploma> persons;
   private String link;
+  private String button_link = "src/main/java/org/hse/Source/button_phone.jpg";
+  private String p_link = "src/main/java/org/hse/Source/phone.jpg";
 
   public Main() {
     super("DiplomaMaker");
 
     // создаем кнопку "Таблица"
-    tableButton = new JButton("Таблица");
+    tableButton = new CustomButton("Таблица", button_link);
 
     // устанавливаем слушатель событий для кнопки "Таблица"
     tableButton.addActionListener(this);
 
     // создаем кнопку "Шаблон"
-    sampleButton = new JButton("Шаблон");
+    sampleButton = new CustomButton("Шаблон", button_link);
 
     // устанавливаем слушатель событий для кнопки "Шаблон"
     sampleButton.addActionListener(this);
 
     // создаем кнопку "Редактирование"
-    JButton edButton = new JButton("Редактирование");
+    JButton edButton = new CustomButton("Редактирование", button_link);
 
     // устанавливаем слушатель событий для кнопки "Редактирование"
     edButton.addActionListener(this);
 
     // создаем кнопку "Загрузка"
-    diplomaButton = new JButton("Загрузка");
+    diplomaButton = new CustomButton("Загрузка", button_link);
 
     // устанавливаем слушатель событий для кнопки "Загрузка"
     diplomaButton.addActionListener(this);
 
     // создаем кнопку "Быстрая Загрузка"
-    quick_diplomaButton = new JButton("Быстрая Загрузка");
+    quick_diplomaButton = new CustomButton("Быстрая Загрузка", button_link);
 
     // устанавливаем слушатель событий для кнопки "Быстрая Загрузка"
     quick_diplomaButton.addActionListener(this);
 
     // создаем панели и добавляем на нее кнопки
     tablePanel = new JPanel();
+    tablePanel.setOpaque(false);
     tablePanel.add(tableButton);
     samplePanel = new JPanel();
+    samplePanel.setOpaque(false);
     samplePanel.add(sampleButton);
     JPanel edPanel = new JPanel();
+    edPanel.setOpaque(false);
     edPanel.add(edButton);
     JPanel diplomaPanel = new JPanel();
+    diplomaPanel.setOpaque(false);
     diplomaPanel.add(diplomaButton);
     JPanel quick_diplomaPanel = new JPanel();
+    quick_diplomaPanel.setOpaque(false);
     quick_diplomaPanel.add(quick_diplomaButton);
-    startPanel = new JPanel();
+    //JLabel background = new JLabel(new ImageIcon("src/main/java/org/hse/App/phone.png"));
+
+    startPanel = new JPanel(new BorderLayout()) {
+      @Override
+      protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        ImageIcon imageIcon = new ImageIcon(p_link);
+        Image image = imageIcon.getImage();
+        g.drawImage(image, 0, 0, getWidth(), getHeight(), this);
+      }
+    };
 
     // Создание макета
     startPanel.setLayout(new GridLayout(2, 3));
+
+    //startPanel.add(background);
 
     // Добавление панелей на форму
     startPanel.add(tablePanel);
@@ -232,7 +251,7 @@ public class Main extends JFrame implements ActionListener {
       contentStream.beginText();
 
       String text = surname + " " + name;
-      PDFont font = PDType0Font.load(document, new File("src/main/java/org/hse/App/arial.TTF"));
+      PDFont font = PDType0Font.load(document, new File("src/main/java/org/hse/Source/arial.TTF"));
       float fontSize = 12;
 
       float stringWidth = font.getStringWidth(text) * fontSize / 1000f;
@@ -258,10 +277,26 @@ public class Main extends JFrame implements ActionListener {
       table_file = null;
 
       // Создаем панель страницы A
-      pageAPanel = new JPanel();
-      JButton button1 = new JButton("Ввести ссылку");
-      JButton button2 = new JButton("Загрузка с компьютера");
-      JPanel buttonPanel = new JPanel();
+      pageAPanel = new JPanel(new BorderLayout()) {
+        @Override
+        protected void paintComponent(Graphics g) {
+          super.paintComponent(g);
+          ImageIcon imageIcon = new ImageIcon(p_link);
+          Image image = imageIcon.getImage();
+          g.drawImage(image, 0, 0, getWidth(), getHeight(), this);
+        }
+      };
+      JButton button1 = new CustomButton("Ввести ссылку", button_link);
+      JButton button2 = new CustomButton("Загрузка с компьютера", button_link);
+      JPanel buttonPanel = new JPanel() {
+        @Override
+        protected void paintComponent(Graphics g) {
+          super.paintComponent(g);
+          ImageIcon imageIcon = new ImageIcon(p_link);
+          Image image = imageIcon.getImage();
+          g.drawImage(image, 0, 0, getWidth(), getHeight(), this);
+        }
+      };
       buttonPanel.add(button1);
       buttonPanel.add(button2);
 
@@ -316,7 +351,7 @@ public class Main extends JFrame implements ActionListener {
 
       // создаем и добавляем кнопку "Редактирование"
       if (editSampleInd) {
-        editSampleButton = new JButton("Редактирование");
+        editSampleButton = new CustomButton("Редактирование", button_link);
         samplePanel.add(editSampleButton);
       }
 
@@ -332,8 +367,10 @@ public class Main extends JFrame implements ActionListener {
     }
     if (e.getSource() == diplomaButton) {
       File saveFolder = chooseSaveFolder();
-      for (int i = 0; i < name.length; i++) {
-        String str = lastname[i] + " " + name[i] + ".pdf";
+      for (Diploma person : persons) {
+        String lastname = person.getLastName();
+        String name = person.getFirstName();
+        String str = lastname + " " + name + ".pdf";
         try {
           PDDocument sourceDoc = PDDocument.load(pdf_file);
           // Создаем новый документ
@@ -344,7 +381,7 @@ public class Main extends JFrame implements ActionListener {
             newDoc.addPage(sourceDoc.getPage(j));
           }
 
-          replacefio(newDoc, lastname[i], name[i]);
+          replacefio(newDoc, lastname, name);
 
           // Сохраняем новый документ
           if (saveFolder != null) {
@@ -392,7 +429,7 @@ public class Main extends JFrame implements ActionListener {
 
     // Добавляем стартовую панель обратно в окно и обновляем его
     if (!editTableInd) {
-      nameButton = new JButton();
+      nameButton = new CustomButton("", button_link);
     }
     tableButton.setText("Редактирование таблицы");
     tableButton.revalidate();
