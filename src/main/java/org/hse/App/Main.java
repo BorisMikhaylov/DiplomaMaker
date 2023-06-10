@@ -6,14 +6,19 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType0Font;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.TextPosition;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,6 +32,8 @@ import org.hse.parsers.GoogleSheetsParser;
 import static java.lang.Math.max;
 
 public class Main extends JFrame implements ActionListener {
+  private static final List<TextObject> textObjects = new ArrayList<>();
+  private static final int fontSize = 50; // размер шрифта по умолчанию
 
   private final CustomButton tableButton;
   private final CustomButton sampleButton;
@@ -36,8 +43,9 @@ public class Main extends JFrame implements ActionListener {
   private CustomButton editSampleButton;
   private CustomButton nameButton;
   private final JPanel tablePanel;
+  private final JButton edButton;
   private final JPanel samplePanel;
-  private JPanel startPanel;
+  private final JPanel startPanel;
   private JPanel pageAPanel;
   private boolean editTableInd = false;
   private boolean editSampleInd = false;
@@ -50,8 +58,8 @@ public class Main extends JFrame implements ActionListener {
   private File pdf_file;
   private static List<Diploma> persons;
   private String link;
-  private String button_link = "src/main/java/org/hse/Source/button_phone.jpg";
-  private String p_link = "src/main/java/org/hse/Source/phone.jpg";
+  private final String button_link = "src/main/java/org/hse/Source/button_phone.jpg";
+  private final String p_link = "src/main/java/org/hse/Source/phone.jpg";
 
   public Main() {
     super("DiplomaMaker");
@@ -69,7 +77,7 @@ public class Main extends JFrame implements ActionListener {
     sampleButton.addActionListener(this);
 
     // создаем кнопку "Редактирование"
-    JButton edButton = new CustomButton("Редактирование", button_link);
+    edButton = new CustomButton("Редактирование", button_link);
 
     // устанавливаем слушатель событий для кнопки "Редактирование"
     edButton.addActionListener(this);
@@ -144,7 +152,7 @@ public class Main extends JFrame implements ActionListener {
     table_file = table.getSelectedFile();
     if (table_file != null) {
       if (table_file.isFile() && (table_file.getName().endsWith(".xlsx")
-          || table_file.getName().endsWith(".csv"))) {
+              || table_file.getName().endsWith(".csv"))) {
         if (table_file.getName().endsWith(".xlsx")) {
           ExcelParser parser = new ExcelParser(table_file);
           persons = parser.parse();
@@ -154,11 +162,11 @@ public class Main extends JFrame implements ActionListener {
         }
       } else {
         JOptionPane.showMessageDialog(null, "Выберите файл с расширением .xlsx или .csv", "Ошибка",
-            JOptionPane.ERROR_MESSAGE);
+                JOptionPane.ERROR_MESSAGE);
       }
     } else {
       JOptionPane.showMessageDialog(null, "Выберите файл с расширением .xlsx или .csv", "Ошибка",
-          JOptionPane.ERROR_MESSAGE);
+              JOptionPane.ERROR_MESSAGE);
     }
   }
 
@@ -176,8 +184,82 @@ public class Main extends JFrame implements ActionListener {
       // выполнить действия с загруженным файлом
     } else {
       JOptionPane.showMessageDialog(null, "Выберите файл с расширением .pdf", "Ошибка",
-          JOptionPane.ERROR_MESSAGE);
+              JOptionPane.ERROR_MESSAGE);
     }
+  }
+
+  void editor() throws IOException {
+    // загрузка pdf-файла
+    if (pdf_file == null) {
+      JOptionPane.showMessageDialog(null, "Выберите файл с расширением .pdf", "Ошибка",
+              JOptionPane.ERROR_MESSAGE);
+    }
+    PDDocument document = PDDocument.load(pdf_file);
+
+    // получение изображения из первой страницы pdf
+    PDFRenderer pdfRenderer = new PDFRenderer(document);
+    BufferedImage image = pdfRenderer.renderImage(0);
+
+    // создание окна с изображением
+    JFrame frame = new JFrame();
+    frame.getContentPane().setLayout(new BorderLayout());
+
+    ImagePanel imagePanel = new ImagePanel(image);
+    frame.getContentPane().add(imagePanel, BorderLayout.CENTER);
+
+    frame.setSize(image.getWidth(), image.getHeight());
+    frame.setLocationRelativeTo(null);
+    frame.setVisible(true);
+
+    // добавление обработчика кликов мыши
+    imagePanel.addMouseListener(new MouseAdapter() {
+      @Override
+      public void mouseClicked(MouseEvent e) {
+        super.mouseClicked(e);
+        String text = JOptionPane.showInputDialog(frame, "Введите текст:");
+        if (text != null && !text.isEmpty()) {
+          String fontSizeString = JOptionPane.showInputDialog(frame, "Введите размер шрифта (по умолчанию: " + fontSize + "):");
+          int inputFontSize = fontSize;
+          if (fontSizeString != null && !fontSizeString.isEmpty()) {
+            try {
+              inputFontSize = Integer.parseInt(fontSizeString);
+            } catch (NumberFormatException ex) {
+              // Обработка некорректного ввода
+              JOptionPane.showMessageDialog(frame, "Некорректный размер шрифта. Используется значение по умолчанию: " + fontSize);
+            }
+          }
+          textObjects.add(new TextObject(text, e.getX(), e.getY(), inputFontSize));
+          imagePanel.repaint();
+        }
+      }
+    });
+
+    // добавление кнопки сохранения
+    JButton saveButton = new JButton("Сохранить");
+    saveButton.addActionListener(u -> {
+      Graphics2D g2d = image.createGraphics();
+
+      for (TextObject textObject : textObjects) {
+        g2d.setFont(new Font("Arial", Font.PLAIN, textObject.getFontSize()));
+        g2d.setColor(Color.BLACK);
+        g2d.drawString(textObject.getText(), textObject.getX(), textObject.getY());
+      }
+
+      try {
+        // сохранение измененного изображения
+        File outputFile = new File("result.png");
+        ImageIO.write(image, "png", outputFile);
+
+        PNGtoPDFConverter tp = new PNGtoPDFConverter();
+        PDDocument doc = tp.to_pdf("result.png", "result.pdf");
+        outputFile.delete();
+        JOptionPane.showMessageDialog(frame, "Изображение успешно сохранено в файл result.pdf");
+      } catch (IOException ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(frame, "Ошибка при сохранении изображения: " + ex.getMessage());
+      }
+    });
+    frame.getContentPane().add(saveButton, BorderLayout.SOUTH);
   }
 
   private static File chooseSaveFolder() {
@@ -195,7 +277,7 @@ public class Main extends JFrame implements ActionListener {
   }
 
   static List<TextPositionSequence> findSubwords(PDDocument document, String searchTerm)
-      throws IOException {
+          throws IOException {
     final List<TextPositionSequence> hits = new ArrayList<TextPositionSequence>();
     PDFTextStripper stripper = new PDFTextStripper() {
       @Override
@@ -241,10 +323,10 @@ public class Main extends JFrame implements ActionListener {
 
       PDPage pag = document.getPage(0); // получение первой страницы
       PDPageContentStream contentStream = new PDPageContentStream(document, pag,
-          PDPageContentStream.AppendMode.APPEND, true);
+              PDPageContentStream.AppendMode.APPEND, true);
 
       contentStream.addRect(fx, fy, iwidth + ix - fx,
-          max(fheight, iheight)); // добавление прямоугольника
+              max(fheight, iheight)); // добавление прямоугольника
       contentStream.setNonStrokingColor(Color.WHITE);
       contentStream.fill(); // закрашивание прямоугольника
 
@@ -314,7 +396,7 @@ public class Main extends JFrame implements ActionListener {
           persons = parser.parse();
           if (persons == null) {
             JOptionPane.showMessageDialog(null, "Простите, но таблица неверная", "Ошибка",
-                JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.ERROR_MESSAGE);
           } else {
             googleSheetIndex = true;
             goBack();
@@ -328,7 +410,7 @@ public class Main extends JFrame implements ActionListener {
           table_load();
           if (persons == null) {
             JOptionPane.showMessageDialog(null, "Простите, но таблица неверная", "Ошибка",
-                JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.ERROR_MESSAGE);
           } else {
             excelInd = true;
             goBack();
@@ -418,6 +500,13 @@ public class Main extends JFrame implements ActionListener {
         }
       }
     }
+    if (e.getSource() == edButton) {
+      try {
+        editor();
+      } catch (IOException ex) {
+        throw new RuntimeException(ex);
+      }
+    }
   }
 
   private void goBack() {
@@ -446,6 +535,90 @@ public class Main extends JFrame implements ActionListener {
     getContentPane().add(startPanel);
     revalidate();
     repaint();
+  }
+
+  private static class ImagePanel extends JPanel {
+    private final BufferedImage image;
+
+    public ImagePanel(BufferedImage image) {
+      this.image = image;
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+      super.paintComponent(g);
+      g.drawImage(image, 0, 0, getWidth(), getHeight(), null);
+
+      Graphics2D g2d = (Graphics2D) g;
+
+      for (TextObject textObject : textObjects) {
+        g2d.setFont(new Font("Arial", Font.PLAIN, textObject.getFontSize()));
+        g2d.setColor(Color.BLACK);
+        g2d.drawString(textObject.getText(), textObject.getX(), textObject.getY());
+      }
+    }
+  }
+  private static class TextObject {
+    private final String text;
+    private final int x;
+    private final int y;
+    private final int fontSize;
+
+    public TextObject(String text, int x, int y, int fontSize) {
+      this.text = text;
+      this.x = x;
+      this.y = y;
+      this.fontSize = fontSize;
+    }
+
+    public String getText() {
+      return text;
+    }
+
+    public int getX() {
+      return x;
+    }
+
+    public int getY() {
+      return y;
+    }
+
+    public int getFontSize() {
+      return fontSize;
+    }
+  }
+
+  private static class PNGtoPDFConverter {
+    private final PDDocument document = new PDDocument();
+
+    public PDDocument to_pdf(String pngFilePath, String pdfFilePath) {
+      try {
+        // Загрузка изображения из файла PNG
+        BufferedImage image = ImageIO.read(new File(pngFilePath));
+
+        // Создание нового PDF-документа
+        PDPage page = new PDPage();
+        document.addPage(page);
+
+        // Получение контента страницы для рисования
+        PDPageContentStream contentStream = new PDPageContentStream(document, page);
+
+        // Рисование изображения на странице
+        float width = page.getMediaBox().getWidth();
+        float height = page.getMediaBox().getHeight();
+        contentStream.drawImage(
+                org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject.createFromFile(pngFilePath, document),
+                0, 0, width, height);
+
+        // Закрытие контента и сохранение документа
+        contentStream.close();
+        document.save(pdfFilePath);
+        document.close();
+      } catch (IOException e) {
+        System.out.println("Ошибка при преобразовании PNG в PDF: " + e.getMessage());
+      }
+      return document;
+    }
   }
 
   public static void main(String[] args) {
