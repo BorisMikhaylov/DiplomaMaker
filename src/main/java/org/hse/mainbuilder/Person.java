@@ -1,14 +1,22 @@
 package org.hse.mainbuilder;
 
+import org.hse.parsers.Diploma;
+
 public class Person {
     String firstName;
     String lastName;
-    int position;
+    String patronymic;
+    String school;
+    String subject;
+    int degree;
 
-    public Person(String firstName, String lastName, int position) {
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.position = position;
+    public Person(Diploma diploma) {
+        firstName = diploma.getFirstName();
+        lastName = diploma.getLastName();
+        patronymic = diploma.getPatronymic();
+        school = diploma.getSchool();
+        subject = diploma.getSubject();
+        degree = diploma.getDegree();
     }
 }
 
