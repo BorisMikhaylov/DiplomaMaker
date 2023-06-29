@@ -1,5 +1,5 @@
 # DiplomaMaker
-DiplomaMaker is a free and open source application inspired by Battle City. It will help you generate a large number of diplomas from the provided template file and table with participants.
+DiplomaMaker is a free and open source application. It will help you generate a large number of diplomas from the provided template file and table with participants.
 The application also has an editor that will allow you to create your own template for which diplomas will be generated.
 
 ## Participant table format:
